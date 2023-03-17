@@ -1,0 +1,3 @@
+awkward==1.10.2
+tenacity
+git+https://github.com/CoffeaTeam/lpcjobqueue.git@v0.2.7

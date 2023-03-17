@@ -1,0 +1,25 @@
+# python files
+__pycache__
+*.pyc
+.ipynb_checkpoints
+.eggs
+*.egg-info
+
+# binary files
+*.root
+*.png
+*.zip
+*.eps
+*.pdf
+*.tar.gz
+*.exe
+
+# specific files/folders
+/.local
+/coffeaenv
+/.ipython
+/.vscode
+.Trash*
+.triton_env
+/TreeMaker
+/tritonenv
