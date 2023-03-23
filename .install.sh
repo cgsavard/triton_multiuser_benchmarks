@@ -54,30 +54,6 @@ install_pip_packages() {
   fi
 }
 
-install_treemaker() {
-  ## Checking for the existance of TreeMaker
-  if [[ ! -d TreeMaker ]]; then
-    git clone https://github.com/TreeMaker/TreeMaker.git TreeMaker
-    if [ $? -eq 0 ]; then
-      echo "Finished installing TreeMaker"
-    else
-      echo ""
-      echo "##################################################################"
-      echo "# WARNING!"
-      echo "#"
-      echo "# There was an issue installing TreeMaker!"
-      echo "# Notebooks will still function, but you will not be able to look"
-      echo "# for Ntuple files using the standard methods in the notebooks!"
-      echo "# Besure to clone the TreeMaker package into the target directory!"
-      echo "#"
-      echo "# GitHub repository: git@github.com:TreeMaker/TreeMaker.git"
-      echo "#"
-      echo "##################################################################"
-      echo ""
-    fi
-  fi
-}
-
 # For IMAGE/LOCAL with a virtual evnrionment
 if [[ $MODE == LOCAL ]]; then
   # Setting jupyter paths for local kernel install

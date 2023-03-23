@@ -16,23 +16,16 @@ fi
 kernel_dir=$(jupyter kernelspec list | grep coffea-triton | awk '{print $2}')
 rm -rf ${kernel_dir}
 
-if [[ -z ${VENV_NAME} ]]; then
-  # Removing TreeMaker
-  $ECHO "Removing TreeMaker"
-  site_dir=\${PYTHONPATH/:*//}
-  rm -rf ${site_dir}/TreeMaker
-else
-  storage_dir=$(readlink -f $PWD)
+storage_dir=$(readlink -f $PWD)
 
-  $ECHO "Removing the virtual environment ... "
-  rm -rf ${storage_dir}/${VENV_NAME}
+$ECHO "Removing the virtual environment ... "
+rm -rf ${storage_dir}/${VENV_NAME}
 
-  $ECHO "Removing local ipython/jupyter files..."
-  rm -rf ${storage_dir}/.jupyter
-  rm -rf ${storage_dir}/.local/share/jupyter
-  rm -rf ${storage_dir}/.ipython
-  deactivate
-fi
+$ECHO "Removing local ipython/jupyter files..."
+rm -rf ${storage_dir}/.jupyter
+rm -rf ${storage_dir}/.local/share/jupyter
+rm -rf ${storage_dir}/.ipython
+deactivate
 
 # Unsetting environment variables
 rm $PWD/.triton_env
