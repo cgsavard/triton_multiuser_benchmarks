@@ -12,6 +12,6 @@ TOKEN=$(od -vN "16" -An -tx1 /dev/urandom | tr -d " \n")
 echo "Server url: http://127.0.0.1:${PORT}/?token=${TOKEN}"
 echo ""
 
-jupyter notebook --ip 0.0.0.0 --port ${PORT} \
+jupyter lab --ip 0.0.0.0 --port ${PORT} \
 	--no-browser --notebook-dir . \
 	--NotebookApp.token=$TOKEN

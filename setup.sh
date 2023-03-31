@@ -11,7 +11,7 @@ PIP_FILE_IMAGE="requirements.txt"
 PIP_FILE_LOCAL="requirements_noimage.txt"
 
 VENV_NAME="tritonenv"
-COFFEA_IMAGE="coffeateam/coffea-dask:0.7.18-fastjet-3.3.4.0rc9-ga393bf1"
+COFFEA_IMAGE="coffeateam/coffea-dask:0.7.21-fastjet-3.4.0.1-gc3d707c"
 PIP_FILE=$PIP_FILE_IMAGE
 LCG_PATH="/cvmfs/sft.cern.ch/lcg/views/LCG_98python3/x86_64-centos7-gcc9-opt"
 MODE="IMAGE"

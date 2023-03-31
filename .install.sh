@@ -72,6 +72,5 @@ INSTALL_PYTHON=$VENV_NAME/bin/python
 source $VENV_NAME/bin/activate
 install_pip_packages
 make_kernel
-install_treemaker
 unset INSTALL_PYTHON
 
