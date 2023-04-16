@@ -15,6 +15,10 @@ IMAGE)
   export IPYTHONDIR=/srv/.ipython
   export PYTHONPATH=/srv
   export BASE=/srv
+  
+  # Setting the condor configuration
+  grep -v '^include' /etc/condor/config.d/01_cmslpc_interactive > .condor_config
+
   # Running the singularity image
   singularity exec -p -B ${PWD}:/srv -B /uscmst1b_scratch --pwd /srv \
     /cvmfs/unpacked.cern.ch/registry.hub.docker.com/${COFFEA_IMAGE} \

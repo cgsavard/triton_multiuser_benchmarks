@@ -70,8 +70,8 @@ if [[ ! -d $VENV_NAME ]]; then
 fi
 INSTALL_PYTHON=$VENV_NAME/bin/python
 source $VENV_NAME/bin/activate
+#python -m pip install --upgrade pip setuptools wheel
 install_pip_packages
 make_kernel
-install_treemaker
 unset INSTALL_PYTHON
 
