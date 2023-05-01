@@ -443,6 +443,7 @@ def convert_results_to_df(results, step, unique_model_versions=None, unique_gpu_
     max_date = max(max_dates)
     new_index = pd.date_range(min_date, max_date, freq=step)
     ret = None
+    concat_dict = {}
     for k, vlist in results.items():
         it = 0
         if len(vlist) > 1:
@@ -460,5 +461,7 @@ def convert_results_to_df(results, step, unique_model_versions=None, unique_gpu_
                 ret = tmp.rename(columns={"value": k})
             else:
                 assert np.all(ret.index.values == tmp.index.values), "Mismatched Time Indices Detected"
-                ret.loc[:, k] = tmp.value
+                concat_dict[k] = tmp.value
+                #ret.loc[:, k] = tmp.value
+    ret = pd.concat((ret, pd.DataFrame(concat_dict)), axis='columns')
     return ret
