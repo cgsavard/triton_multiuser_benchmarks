@@ -178,15 +178,20 @@ def single_query_split(timestamp_tuples,
                       namespace='triton',
                       deduplicate=False,
                       dataframe_mode="individual", #"unified", "individual", "naive"
-                      prom=None):
+                      prom=None,
+                      track=False):
     """Function for running a single query and returning the results as a list of individual dataframes (dataframe_mode='individual')
     or raw results (dataframe_mode='bypass')."""
     if prom is None:
         prom = PrometheusConnect(url="http://lsdataitb.fnal.gov:9009/prometheus", disable_ssl=True)
     results_dict = {}
     errors = []
-    print(f"Running Query: {query}")
-    for st, et in track(timestamp_tuples, description = f"Retrieving"):
+    #print(f"Running Query: {query}")
+    if track:
+        iterable = track(timestamp_tuples, description = f"Retrieving")
+    else:
+        iterable = timestamp_tuples
+    for st, et in iterable:
         test_inp = prom.custom_query_range(
             query=query,
             start_time=parse_datetime(st),
@@ -259,7 +264,7 @@ def get_all_queries_v3(timestamp_tuples,
     unique_gpu_instances = find_active_gpus(timestamp_tuples, step=columns_step, namespace=None, prom=prom) #different namespace entirely
     
     #Basic queries. Some of them are used as proxies to figure out the unqique queries to make later, like the "gpu_tensor_util" below
-    for key, query in {
+    for key, query in track({
         "num_instances": "count((sum by(pod) (delta(nv_inference_request_success"+rs+"["+step+"]))) > 0)",
         "inf_rate_net":"sum (rate(nv_inference_count"+rs+"["+step+"]))",
         "inf_reqs_net":"sum(rate(nv_inference_request_success"+rs+"["+step+"]))",
@@ -268,7 +273,7 @@ def get_all_queries_v3(timestamp_tuples,
         "inf_inp_dur_net": "avg (delta(nv_inference_compute_input_duration_us"+rs+"["+step+"])/(0.001+delta(nv_inference_request_success"+rs+"["+step+"])))",
         "inf_inf_dur_net": "avg (delta(nv_inference_compute_infer_duration_us"+rs+"["+step+"])/(0.001+delta(nv_inference_request_success"+rs+"["+step+"])))",
         "inf_out_dur_net": "avg (delta(nv_inference_compute_output_duration_us"+rs+"["+step+"])/(0.001+delta(nv_inference_request_success"+rs+"["+step+"])))",
-        }.items():
+        }.items(), description="Running General Queries"):
         # Log the queries, as they're easier to parse after being resolved fully
         queries.append((key, query))
         # Dataframes are concatenated together along the time (index value) axis
@@ -278,7 +283,9 @@ def get_all_queries_v3(timestamp_tuples,
                                                       namespace=namespace,
                                                       deduplicate=deduplicate,
                                                       dataframe_mode="individual", #"unified", "individual", "naive"
-                                                      prom=prom)
+                                                      prom=prom,
+                                                      track=False,
+                                                      )
         
     # Here we build the model-specific queries, getting both the number of unique number of Triton instances that served 
     # inference requests for this model, ad well as the inference rate and request durations of that model across 
@@ -289,6 +296,16 @@ def get_all_queries_v3(timestamp_tuples,
                          for model_version in unique_model_versions}
         model_queries.update(
             {"inf_rate_"+model_version: "sum (rate(nv_inference_count{model='"+
+             model_version.split("/")[0]+"',version='"+model_version.split("/")[1]+"'"+rsm+"}["+step+"]))"
+             for model_version in unique_model_versions})
+        model_queries.update(
+            {"avg_batchsize_"+model_version: "sum(delta(nv_inference_count{model='"+
+             model_version.split("/")[0]+"',version='"+model_version.split("/")[1]+"'"+rsm+"}["+step+"]))/"+
+             "sum(delta(nv_inference_exec_count{model='"+
+             model_version.split("/")[0]+"',version='"+model_version.split("/")[1]+"'"+rsm+"}["+step+"]))"
+             for model_version in unique_model_versions})
+        model_queries.update(
+            {"inf_reqs_"+model_version: "sum (rate(nv_inference_request_success{model='"+
              model_version.split("/")[0]+"',version='"+model_version.split("/")[1]+"'"+rsm+"}["+step+"]))"
              for model_version in unique_model_versions})
         model_queries.update(
@@ -321,7 +338,7 @@ def get_all_queries_v3(timestamp_tuples,
              "(0.001+delta(nv_inference_request_success{model='"+model_version.split("/")[0]+
              "',version='"+model_version.split("/")[1]+"'"+rsm+"}["+step+"])))"
              for model_version in unique_model_versions})
-        for key, query in model_queries.items():
+        for key, query in track(model_queries.items(), description="Running Model Queries"):
             queries.append((key, query))
             results[key], errors[key] = single_query_split(timestamp_tuples, 
                                                           query, 
@@ -329,7 +346,9 @@ def get_all_queries_v3(timestamp_tuples,
                                                           namespace=namespace,
                                                           deduplicate=deduplicate,
                                                           dataframe_mode="individual", #"unified", "individual", "naive"
-                                                          prom=prom)
+                                                          prom=prom,
+                                                          track=False,
+                                                          )
             if results[key] is None:
                 # If somehow we got no results for this model query, remove it from the dictionary and avoid iterating over it later
                 try:
@@ -362,7 +381,7 @@ def get_all_queries_v3(timestamp_tuples,
              "exported_container='triton',exported_namespace='triton',prometheus_replica='prometheus-k8s-0',"+
             "device='"+gpu_inst.split("/")[0]+"',GPU_I_ID='"+gpu_inst.split("/")[1]+"',instance='"+gpu_inst.split("/")[2]+"'}["+step+"]))"
              for mg, gpu_inst in enumerate(unique_gpu_instances)})
-        for key, query in gpu_queries.items():
+        for key, query in track(gpu_queries.items(), description="Running GPU Queries"):
             queries.append((key, query))
             results[key], errors[key] = single_query_split(timestamp_tuples, 
                                                           query, 
@@ -370,7 +389,9 @@ def get_all_queries_v3(timestamp_tuples,
                                                           namespace=namespace,
                                                           deduplicate=deduplicate,
                                                           dataframe_mode="individual", #"unified", "individual", "naive"
-                                                          prom=prom)
+                                                          prom=prom,
+                                                          track=False,
+                                                          )
             if results[key] is None:
                 #print(f"results empty for {key}")
                 try:
