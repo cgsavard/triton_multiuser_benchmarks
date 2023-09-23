@@ -1,0 +1,37 @@
+name: "pn_demo"
+platform: "pytorch_libtorch"
+max_batch_size : 1200
+dynamic_batching {
+   preferred_batch_size: [ 1024 ]
+}
+input [
+  {
+    name: "points__0"
+    data_type: TYPE_FP32
+    dims: [ 2, -1 ]
+  },
+  {
+    name: "features__1"
+    data_type: TYPE_FP32
+    dims: [ 5, -1 ]
+  },
+  {
+    name: "mask__2"
+    data_type: TYPE_FP32
+    dims: [ 1, -1 ]
+  }
+]
+output [
+  {
+    name: "softmax__0"
+    data_type: TYPE_FP32
+    dims: [ 2 ]
+    label_filename: "pn_demo_labels.txt"
+  }
+]
+parameters: {
+key: "INFERENCE_MODE"
+    value: {
+    string_value: "true"
+    }
+}
