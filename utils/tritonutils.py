@@ -1,4 +1,5 @@
 import tritonclient.grpc as triton_grpc
+import tritonclient.http as triton_http
 import numpy as np
 
 class wrapped_triton:
@@ -18,11 +19,17 @@ class wrapped_triton:
                                                        verbose=False,
                                                        ssl=True)
       self._triton_protocol = triton_grpc
+    elif self._protocol == "http":
+      self._client = triton_http.InferenceServerClient(url=self._address,
+                                                       verbose=False,
+                                                       concurrency=12,
+                                                       )
+      self._triton_protocol = triton_http
     else:
       raise ValueError(
           f"{self._protocol} does not encode a valid protocol (grpc or http)")
 
-  def __call__(self, input_dict) -> np.ndarray:
+  def __call__(self, input_dict, output_name) -> np.ndarray:
     '''
     Run inference of model on triton server
     '''
@@ -35,7 +42,7 @@ class wrapped_triton:
       input.set_data_from_numpy(input_dict[key])
       inputs.append(input)
 
-    output = self._triton_protocol.InferRequestedOutput("softmax__0")
+    output = self._triton_protocol.InferRequestedOutput(output_name)
 
     # make request to server for inference
     request = self._client.infer(self._model,
@@ -43,6 +50,6 @@ class wrapped_triton:
                                  inputs=inputs,
                                  outputs=[output],
                                  )
-    out = request.as_numpy("softmax__0")
+    out = request.as_numpy(output_name)
 
     return out
