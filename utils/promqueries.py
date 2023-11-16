@@ -265,9 +265,16 @@ def get_all_queries_v3(timestamp_tuples,
     
     #Basic queries. Some of them are used as proxies to figure out the unqique queries to make later, like the "gpu_tensor_util" below
     for key, query in track({
+        # This calculates number of instances by summing successful request stats for each pod (triton instance)
+        # then counting the number of non-zero elements there are in the (pod-indexed) array
         "num_instances": "count((sum by(pod) (delta(nv_inference_request_success"+rs+"["+step+"]))) > 0)",
+        # sum over all instances the individual rates (for nv_inference_count, batchsize N is N inferences)
         "inf_rate_net":"sum (rate(nv_inference_count"+rs+"["+step+"]))",
         "inf_reqs_net":"sum(rate(nv_inference_request_success"+rs+"["+step+"]))",
+        # These queries average over all triton instances (avg op)
+        # in the time slice, take the *_duration (delta op on the time range vector) and
+        # divide by the number of successful requests  in the same duration 
+        # (requests != inferences or batch executions) with an additional 0.001 to avoid div-by-zero
         "inf_req_dur_net": "avg (delta(nv_inference_request_duration_us"+rs+"["+step+"])/(0.001+delta(nv_inference_request_success"+rs+"["+step+"])))",
         "inf_que_dur_net": "avg (delta(nv_inference_queue_duration_us"+rs+"["+step+"])/(0.001+delta(nv_inference_request_success"+rs+"["+step+"])))",
         "inf_inp_dur_net": "avg (delta(nv_inference_compute_input_duration_us"+rs+"["+step+"])/(0.001+delta(nv_inference_request_success"+rs+"["+step+"])))",
