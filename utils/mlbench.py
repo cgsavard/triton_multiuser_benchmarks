@@ -57,7 +57,7 @@ def generate_pseudodata_from_seed(seed, chunksize=20000):
     }),njets)
 
 def triton_evaluate(model, X):
-    return model(X)
+    return model(X, "softmax__0") #change the output name to what is used for the model being tested
 
 def run_inference_pnmodel(record_array, model, batchsize=1024, triton=False, worklog=SimpleWorkLog):
     """
@@ -140,11 +140,11 @@ def run_inference_pnmodel(record_array, model, batchsize=1024, triton=False, wor
     flattened_record = ak.with_field(flattened_record, output, "output")
     return ak.unflatten(flattened_record, counts), worklogs, errors
     
-def get_triton_client(model_and_version="pn_demo/1", server="triton+grpc://triton.apps.okddev.fnal.gov:443/"):
+def get_triton_client(model_and_version="pn_demo/1", server="triton+grpc://triton.fnal.gov:443/"):
     """
     Parameters:
     model_and_version (str): Name and version of the desired model on the triton server (e.g. 'pn_demo/1')
-    server (str): protocol and address of server (e.g. 'triton+grpc://triton.apps.okddev.fnal.gov:443/')
+    server (str): protocol and address of server (e.g. 'triton+grpc://triton.fnal.gov:443/')
     
     Returns:
     triton_model_client (triton client): A client capable of running inference on 
@@ -176,7 +176,8 @@ def create_local_pnmodel():
     local_model.eval()
     return local_model
 
-def process_function(seed, chunksize=1000, batchsize=1024, triton=False, worklog=SimpleWorkLog):
+def process_function(seed, chunksize=1000, batchsize=1024, triton=False, model_and_version="pn_demo/1", 
+                     server="triton+grpc://triton.fnal.gov:443/", worklog=SimpleWorkLog):
     #import importlib
     #from utils.mlbench import SimpleWorkLog as worklog
     worklogs = []
@@ -192,7 +193,7 @@ def process_function(seed, chunksize=1000, batchsize=1024, triton=False, worklog
     triton_model = None
     errors = None
     if triton:
-        triton_model = get_triton_client()
+        triton_model = get_triton_client(model_and_version=model_and_version, server=server)
         with_outputs, inf_worklogs, errors = run_inference_pnmodel(
             inputs, 
             triton_model, 

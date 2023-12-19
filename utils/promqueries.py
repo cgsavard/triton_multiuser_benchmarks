@@ -13,7 +13,7 @@ prom = PrometheusConnect(url="http://lsdataitb.fnal.gov:9009/prometheus", disabl
 # which can be parsed by the prometheus_api_client.utils.parse_datetime function. This can understand timestamps formatted like
 # "2023-03-30 at 16:00:00 MDT"
 # The step is the 'time-window' over which each query will be divided. This should be ~4x as long as the longest frequency for metric-gather
-def get_all_queries(timestamp_tuples, step):
+def get_all_queries(timestamp_tuples, step, space='{namespace="triton", prometheus_replica="prometheus-user-workload-0", model="pn_demo"}'):
     # A dictionary for our results
     results = {}
     # Tuples of the queries we'll make, for debugging and info
@@ -26,24 +26,29 @@ def get_all_queries(timestamp_tuples, step):
     
     #Basic queries. Some of them are used as proxies to figure out the unqique queries to make later, like the "gpu_tensor_util" below
     for key, query in {
-        "num_instances": "count((sum by(pod) (delta(nv_inference_request_success["+step+"]))) > 0)",
-        "inf_rate_net":"sum (rate(nv_inference_count["+step+"]))",
-        "inf_rate_bypod":"sum by(pod) (rate(nv_inference_count["+step+"]))",
-        "inf_rate":"sum by(model, version, pod) (rate(nv_inference_count["+step+"]))",
-        "inf_cache_hit_rate":"sum by(model, version, pod) (rate(nv_cache_num_hits_per_model["+step+"]))",
-        "inf_reqs_net":"sum(rate(nv_inference_request_success["+step+"]))",
-        "inf_reqs_bypod":"sum by(pod) (rate(nv_inference_request_success["+step+"]))",
-        "inf_reqs":"sum by(model, version, pod) (rate(nv_inference_request_success["+step+"]))",
-        "inf_req_dur_net": "avg (delta(nv_inference_request_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
-        "inf_que_dur_net": "avg (delta(nv_inference_queue_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
-        "inf_inp_dur_net": "avg (delta(nv_inference_compute_input_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
-        "inf_inf_dur_net": "avg (delta(nv_inference_compute_infer_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
-        "inf_out_dur_net": "avg (delta(nv_inference_compute_output_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
-        "inf_req_dur": "avg by(model, version, pod) (delta(nv_inference_request_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
-        "inf_que_dur": "avg by(model, version, pod) (delta(nv_inference_queue_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
-        "inf_inp_dur": "avg by(model, version, pod) (delta(nv_inference_compute_input_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
-        "inf_inf_dur": "avg by(model, version, pod) (delta(nv_inference_compute_infer_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
-        "inf_out_dur": "avg by(model, version, pod) (delta(nv_inference_compute_output_duration_us["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
+        "num_instances": "count(sum by(pod) (nv_inference_count{namespace='triton', prometheus_replica='prometheus-user-workload-0'}))",
+        "num_instances_model": "count(sum by(pod) (nv_inference_count"+space+"))",
+        #"count((sum by(pod) (delta(nv_inference_request_success"+space+"["+step+"]))) > 0)",
+        "inf_rate_net":"sum (rate(nv_inference_count"+space+"["+step+"]))",
+        "inf_rate_bypod":"sum by(pod) (rate(nv_inference_count"+space+"["+step+"]))",
+        "inf_rate":"sum by(model, version, pod) (rate(nv_inference_count"+space+"["+step+"]))",
+        "inf_cache_hit_rate":"sum by(model, version, pod) (rate(nv_cache_num_hits_per_model"+space+"["+step+"]))",
+        "inf_reqs_net":"sum(rate(nv_inference_request_success"+space+"["+step+"]))",
+        "inf_reqs_bypod":"sum by(pod) (rate(nv_inference_request_success"+space+"["+step+"]))",
+        "inf_reqs":"sum by(model, version, pod) (rate(nv_inference_request_success"+space+"["+step+"]))",
+        "inf_reqs_model":"sum by(model) (rate(nv_inference_request_success"+space+"["+step+"]))",
+        "inf_req_dur_net": "avg (delta(nv_inference_request_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
+        "inf_que_time_net": "avg(delta(nv_inference_queue_duration_us"+space+"["+step+"])/(1000 * (1 + delta(nv_inference_request_success"+space+"["+step+"]))))",
+        "inf_que_time_model": "avg by(model) (delta(nv_inference_queue_duration_us"+space+"["+step+"])/(1000 * (1 + delta(nv_inference_request_success"+space+"["+step+"]))))",
+        "inf_que_dur_net": "avg (delta(nv_inference_queue_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
+        "inf_inp_dur_net": "avg (delta(nv_inference_compute_input_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
+        "inf_inf_dur_net": "avg (delta(nv_inference_compute_infer_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
+        "inf_out_dur_net": "avg (delta(nv_inference_compute_output_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
+        "inf_req_dur": "avg by(model, version, pod) (delta(nv_inference_request_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
+        "inf_que_dur": "avg by(model, version, pod) (delta(nv_inference_queue_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
+        "inf_inp_dur": "avg by(model, version, pod) (delta(nv_inference_compute_input_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
+        "inf_inf_dur": "avg by(model, version, pod) (delta(nv_inference_compute_infer_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
+        "inf_out_dur": "avg by(model, version, pod) (delta(nv_inference_compute_output_duration_us"+space+"["+step+"])/(1+1000000*delta(nv_inference_request_success"+space+"["+step+"])))",
         "gpu_tensor_util": "sum by(device,GPU_I_ID,instance) (avg_over_time (DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{exported_container='triton',exported_namespace='triton',prometheus_replica='prometheus-k8s-0'}["+step+"]))",
         "gpu_dram_util": "sum by(device,GPU_I_ID,instance) (avg_over_time (DCGM_FI_PROF_DRAM_ACTIVE{exported_container='triton',exported_namespace='triton',prometheus_replica='prometheus-k8s-0'}["+step+"]))",
         #"inf_cache_hits": "avg by(model, version, pod) (delta(nv_cache_num_hits_per_model["+step+"])/(1+1000000*delta(nv_inference_request_success["+step+"])))",
@@ -58,7 +63,7 @@ def get_all_queries(timestamp_tuples, step):
                 query=query,
                 start_time=st,
                 end_time=et,
-                step=step
+                step='15s'#step
             )
             # Queries are converted to a pandas dataframe
             df = MetricRangeDataFrame(test_inp)
